@@ -1,0 +1,8 @@
+[package]
+name = "osxnav"
+version = "0.1.0"
+authors = ["Alan Morgan <alanxoc3@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+cacao = "0.2.1"
