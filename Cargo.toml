@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 cacao = "0.2.1"
+core-graphics = "0.22.3"
