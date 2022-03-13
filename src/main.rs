@@ -7,6 +7,11 @@ use cacao::macos::{App, AppDelegate};
 use cacao::macos::window::{Window, WindowStyle, WindowConfig, WindowDelegate};
 use cacao::color::{Color};
 use cacao::view::View;
+use cacao::objc::{msg_send, sel, sel_impl, class};
+
+use std::os::raw::{c_char, c_int, c_uint, c_void};
+use cacao::objc::runtime::{Object, Class, objc_copyClassList};
+use cacao::foundation::{nil, YES, NO, NSString, NSInteger, NSUInteger};
 
 // Reference can be found here
 // https://github.com/phracker/MacOSX-SDKs/blob/041600eda65c6a668f66cb7d56b7d1da3e8bcc93/MacOSX10.10.sdk/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/NSWindow.h
@@ -50,7 +55,15 @@ impl WindowDelegate for MyWindow {
         window.set_shows_toolbar_button(false);
         window.set_titlebar_appears_transparent(true);
 
+        // debug
+        window.set_movable_by_background(true);
+
         // Needed to move the window according to the screen.
+        unsafe {
+            let _: () = msg_send![&*window.objc, setHidesOnDeactivate:NO];
+            let _: () = msg_send![&*window.objc, setLevel:1 << 30];
+            let _: () = msg_send![&*window.objc, setAnimationBehavior:nil];
+        }
     }
 
     fn will_close(&self) {
@@ -77,9 +90,9 @@ impl WindowDelegate for MyWindow {
 
 fn main() {
     let mut config = WindowConfig::default();
-    config.set_initial_dimensions(0., 0., 2000., 2000.);
+    config.set_initial_dimensions(100., 1100., 100., 100.);
 
-    config.set_styles(&[WindowStyle::FullSizeContentView]);
+    config.set_styles(&[WindowStyle::Borderless]);
 
     App::new("com.test.window-delegate", BasicApp {
         window: Window::with(config, MyWindow::default())
