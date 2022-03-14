@@ -12,7 +12,7 @@ use cacao::image::{ImageView, Image, DrawConfig};
 
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 use cacao::objc::runtime::{Object, Class, objc_copyClassList};
-use cacao::foundation::{nil, YES, NO, NSString, NSInteger, NSUInteger};
+use cacao::foundation::{NSArray, nil, YES, NO, NSString, NSInteger, NSUInteger};
 
 
 struct BasicApp {
@@ -40,25 +40,32 @@ impl WindowDelegate for MyWindow {
     const NAME: &'static str = "MyWindow";
 
     fn did_load(&mut self, window: Window) {
+        let screens: *mut Object = unsafe { msg_send![class!(NSScreen), screens] };
+        let screen: *mut Object = unsafe { msg_send![screens, objectAtIndex:0] };
+        let frame: CGRect = unsafe { msg_send![screen, frame] };
+        let screen_w = frame.size.width;
+        let screen_h = frame.size.height;
+        window.set_content_size(screen_w, screen_h);
+
         let image_view = ImageView::new();
         let config = DrawConfig {
-            source: (12., 12.),
-            target: (100., 100.),
+            source: (screen_w, screen_h),
+            target: (screen_w, screen_h),
             resize: cacao::image::ResizeBehavior::Stretch,
         };
 
-        let image = Image::draw(config, |_cg_rect, context| {
-            let xmin = 3.;
-            let ymin = 3.;
-            let xmax = 10.;
-            let ymax = 10.;
+        let image = Image::draw(config, move |_cg_rect, context| {
+            let xmin = 0.;
+            let ymin = 0.;
+            let xmax = screen_w;
+            let ymax = screen_h;
 
             context.move_to_point(xmin, ymin);
-            context.add_line_to_point(xmin,   ymax);
+            context.add_line_to_point(xmin, ymax);
             context.add_line_to_point(xmax, ymax);
             context.add_line_to_point(xmax, ymin);
-            context.add_line_to_point(xmin,   ymin);
-            context.add_line_to_point(xmin,   ymax);
+            context.add_line_to_point(xmin, ymin);
+            context.add_line_to_point(xmin, ymax);
 
             context.move_to_point(xmin, (ymax + ymin) / 2.);
             context.add_line_to_point(xmax, (ymax + ymin) / 2.);
@@ -89,19 +96,18 @@ impl WindowDelegate for MyWindow {
         // window.set_minimum_size(50,50);
 
         window.set_title_visibility(cacao::macos::window::TitleVisibility::Hidden);
-        // window.set_background_color(Color::Clear);
-        window.set_background_color(Color::SystemBlue);
+        window.set_background_color(Color::Clear);
+        // window.set_background_color(Color::SystemBlue);
         window.set_titlebar_appears_transparent(true);
         window.set_excluded_from_windows_menu(true);
         window.set_shows_toolbar_button(false);
         window.set_titlebar_appears_transparent(true);
 
         // Needed to move the window according to the screen.
-        unsafe {
-            let _: () = msg_send![&*window.objc, setHidesOnDeactivate:NO];
-            let _: () = msg_send![&*window.objc, setLevel:1 << 30];
-            let _: () = msg_send![&*window.objc, setAnimationBehavior:nil];
-        }
+
+        let _: () = unsafe { msg_send![&*window.objc, setHidesOnDeactivate:NO] };
+        let _: () = unsafe { msg_send![&*window.objc, setLevel:1 << 30] };
+        let _: () = unsafe { msg_send![&*window.objc, setAnimationBehavior:nil] };
 
         // debug
         // window.set_movable_by_background(true);
@@ -115,8 +121,7 @@ impl WindowDelegate for MyWindow {
 
 fn main() {
     let mut config = WindowConfig::default();
-    config.set_initial_dimensions(0., 0., 100., 100.);
-
+    config.set_initial_dimensions(0., 0., 0., 0.);
     config.set_styles(&[WindowStyle::Borderless]);
 
     App::new("xoc3.osxnav", BasicApp {
