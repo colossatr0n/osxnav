@@ -102,6 +102,8 @@ impl WindowDelegate for MyWindow {
         window.set_excluded_from_windows_menu(true);
         window.set_shows_toolbar_button(false);
         window.set_titlebar_appears_transparent(true);
+        // let _: () = unsafe { msg_send![&*window.objc, canBecomeMainWindow:NO] };
+        // let _: () = unsafe { msg_send![&*window.objc, canBecomeKeyWindow:NO] };
 
         // Needed to move the window according to the screen.
 
