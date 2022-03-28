@@ -1,8 +1,15 @@
 use std::sync::RwLock;
+use cacao::image::DrawConfig;
+use cacao::objc::{msg_send, sel, sel_impl, class};
 use cacao::macos::{App, AppDelegate, Event, EventMask, EventMonitor};
 use cacao::macos::window::Window;
 use cacao::notification_center::Dispatcher;
+use cacao::objc::runtime::Object;
+use cacao::utils::CGSize;
 use core_graphics::base::CGFloat;
+use core_graphics::display::{CGPoint, CGRect};
+use core_graphics::image::CGImageRef;
+use core_graphics::sys::CGImage;
 use crate::draw::draw_grid;
 use crate::osxnav::{dispatch, Key};
 use crate::osxnav_window::OsxNavWindow;
@@ -44,19 +51,36 @@ impl Dispatcher for OsxNavApp {
             let xy_min_modifiers = xy_modifiers[0];
             let xy_max_modifiers = xy_modifiers[1];
 
-            // Just placeholders for now. Not sure how to actually get these values for a changed grid.
-            let old_xmin = 0.;
-            let old_ymin = 0.;
-            let old_xmax = delegate.config.source.0;
-            let old_ymax = delegate.config.source.1;
+            let grid_frame: CGRect = delegate.image_view.objc.get(|obj| unsafe {
+                return msg_send![obj, frame];
+            });
 
-            // Not sure if this is the best way, but it works. (should actually work when we can get last position of grid)
+            let old_xmin = grid_frame.origin.x;
+            let old_ymin = grid_frame.origin.y;
+            let old_xmax = old_xmin + grid_frame.size.width;
+            let old_ymax = old_ymin + grid_frame.size.height;
+
             let xmin = old_xmin + xy_min_modifiers.0 * (old_xmax - old_xmin)/2.;
             let ymin = old_ymin + xy_min_modifiers.1 * (old_ymax - old_ymin)/2.;
             let xmax = old_xmax - xy_max_modifiers.0 * (old_xmax - old_xmin)/2.;
             let ymax = old_ymax - xy_max_modifiers.1 * (old_ymax - old_ymin)/2.;
 
-            let image = draw_grid(delegate.config, xmin, ymin, xmax, ymax);
+            let grid_length = xmax - xmin;
+            let grid_height = ymax - ymin;
+
+            delegate.image_view.objc.get(|obj| unsafe {
+                let _: ()= msg_send![obj, setFrameSize:CGSize::new(grid_length, grid_height)];
+                let _: () = msg_send![obj, setFrameOrigin:CGPoint::new(xmin, ymin)];
+            });
+
+            let config = DrawConfig {
+                source: (grid_length, grid_height),
+                target: (grid_length, grid_height),
+                resize: cacao::image::ResizeBehavior::Stretch,
+            };
+
+            let image = draw_grid(config, 0., 0., grid_length, grid_height);
+
             delegate.image_view.set_image(&image);
         }
     }
