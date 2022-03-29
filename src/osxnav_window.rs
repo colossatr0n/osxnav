@@ -13,7 +13,6 @@ use crate::draw::draw_grid;
 pub struct OsxNavWindow {
    pub content: View,
    pub image_view: ImageView,
-   pub config: DrawConfig,
 }
 
 impl Default for OsxNavWindow {
@@ -21,12 +20,6 @@ impl Default for OsxNavWindow {
         OsxNavWindow {
             content: View::default(),
             image_view: ImageView::default(),
-            // Just initializing it to something.
-            config: DrawConfig {
-                source: (1., 1.),
-                target: (1., 1.),
-                resize: cacao::image::ResizeBehavior::Stretch,
-            },
         }
     }
 }
@@ -43,13 +36,13 @@ impl WindowDelegate for OsxNavWindow {
         window.set_content_size(screen_w, screen_h);
 
         self.image_view = ImageView::new();
-        self.config = DrawConfig {
+        let config = DrawConfig {
             source: (screen_w, screen_h),
             target: (screen_w, screen_h),
             resize: cacao::image::ResizeBehavior::Stretch,
         };
 
-        let image = draw_grid(self.config, 0., 0., self.config.source.0, self.config.source.1);
+        let image = draw_grid(config, 0., 0., screen_w, screen_h);
         self.image_view.set_image(&image);
         self.content.add_subview(&self.image_view);
         self.content.set_needs_display(true);
