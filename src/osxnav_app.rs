@@ -79,8 +79,8 @@ impl Dispatcher for OsxNavApp {
 
                     let xmin = grid_frame.origin.x;
                     let ymin = grid_frame.origin.y;
-                    let width = xmin + grid_frame.size.width;
-                    let height = ymin + grid_frame.size.height;
+                    let width = grid_frame.size.width;
+                    let height = grid_frame.size.height;
 
                     let click_point = (xmin + width/2., ymin + height/2.);
 
