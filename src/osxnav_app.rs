@@ -87,8 +87,6 @@ impl Dispatcher for OsxNavApp {
                     let result = CGEvent::new_mouse_event(
                         CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap(),
                         CGEventType::LeftMouseDown,
-                        // Right now, clicking happens right on the drawn grid, and gets blocked.
-                        // The clicking logic does work though.
                         CGPoint::new(click_point.0, click_point.1), CGMouseButton::Left
                     );
                     result.unwrap().post(CGEventTapLocation::HID)
