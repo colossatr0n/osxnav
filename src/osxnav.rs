@@ -12,12 +12,14 @@ use crate::OsxNavApp;
 #[repr(C)]
 pub struct Key;
 impl Key {
-    // Find keycodes here for newer versions of MacOS: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/Headers/Events.h
+    // Keycodes local ref: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/Headers/Events.h
+    // Keycodes online ref: https://eastmanreference.com/complete-list-of-applescript-key-codes
     pub const H: NSUInteger = 0x04;
     pub const J: NSUInteger = 0x26;
     pub const K: NSUInteger = 0x28;
     pub const L: NSUInteger = 0x25;
     pub const RETURN: NSUInteger = 0x24;
+    pub const ESC: NSUInteger = 0x35;
 }
 
 // Based off https://github.com/ryanmcgrath/cacao/blob/f558f8e24d6c4f869a4135bd230222455a435dcf/examples/calculator/calculator.rs
@@ -57,6 +59,10 @@ impl OsxNav {
             },
             Key::RETURN => {
                 App::<OsxNavApp, NSUInteger>::dispatch_main(message);
+            },
+            Key::ESC => {
+                // Possibly a bad way to end the program. Works for now though.
+                std::process::exit(0);
             },
             _ => {}
         }
