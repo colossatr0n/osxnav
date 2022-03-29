@@ -70,6 +70,7 @@ impl WindowDelegate for OsxNavWindow {
         let _: () = unsafe { msg_send![&*window.objc, setHidesOnDeactivate:NO] };
         let _: () = unsafe { msg_send![&*window.objc, setLevel:1 << 30] };
         let _: () = unsafe { msg_send![&*window.objc, setAnimationBehavior:nil] };
+        let _: () = unsafe { msg_send![&*window.objc, setIgnoresMouseEvents:YES] };
 
         // debug
         // window.set_movable_by_background(true);
