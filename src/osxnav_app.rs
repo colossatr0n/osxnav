@@ -37,11 +37,7 @@ impl OsxNavApp {
             };
 
             match keycode {
-                Key::H => dispatch(Key::H),
-                Key::J => dispatch(Key::J),
-                Key::K => dispatch(Key::K),
-                Key::L => dispatch(Key::L),
-                Key::RETURN => dispatch(Key::RETURN),
+                Key::H | Key::J | Key::K | Key::L | Key::RETURN | Key::ESC => dispatch(keycode),
                 _ => {}
             }
             None
