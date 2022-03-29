@@ -1,5 +1,6 @@
 use std::sync::RwLock;
-use cacao::image::DrawConfig;
+use cacao::foundation::NSUInteger;
+use cacao::image::{DrawConfig, ImageView};
 use cacao::objc::{msg_send, sel, sel_impl, class};
 use cacao::macos::{App, AppDelegate, Event, EventMask, EventMonitor};
 use cacao::macos::window::Window;
@@ -8,6 +9,8 @@ use cacao::objc::runtime::Object;
 use cacao::utils::CGSize;
 use core_graphics::base::CGFloat;
 use core_graphics::display::{CGPoint, CGRect};
+use core_graphics::event::{CGEvent, CGEventTapLocation, CGEventType, CGMouseButton};
+use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use core_graphics::image::CGImageRef;
 use core_graphics::sys::CGImage;
 use crate::draw::draw_grid;
@@ -24,12 +27,21 @@ impl OsxNavApp {
     fn start_monitoring(&self) {
         let mut lock = self.key_monitor.write().unwrap();
         *lock = Some(Event::local_monitor(EventMask::KeyDown, |evt| {
-            let characters = evt.characters();
-            match characters.as_ref() {
-                "h" => dispatch(Key::H),
-                "j" => dispatch(Key::J),
-                "k" => dispatch(Key::K),
-                "l" => dispatch(Key::L),
+            // We'll use modifiers at some point
+            let modifier_flags: NSUInteger = unsafe {
+                msg_send![&*evt.0, modifierFlags]
+            };
+
+            let keycode: NSUInteger = unsafe {
+                msg_send![&*evt.0, keyCode]
+            };
+
+            match keycode {
+                Key::H => dispatch(Key::H),
+                Key::J => dispatch(Key::J),
+                Key::K => dispatch(Key::K),
+                Key::L => dispatch(Key::L),
+                Key::RETURN => dispatch(Key::RETURN),
                 _ => {}
             }
             None
@@ -44,44 +56,87 @@ impl AppDelegate for OsxNavApp {
     }
 }
 impl Dispatcher for OsxNavApp {
-    type Message = [(CGFloat, CGFloat); 2];
+    type Message = NSUInteger;
 
-    fn on_ui_message(&self, xy_modifiers: Self::Message) {
+    fn on_ui_message(&self, message: Self::Message) {
         if let Some(delegate) = &self.window.delegate {
-            let xy_min_modifiers = xy_modifiers[0];
-            let xy_max_modifiers = xy_modifiers[1];
+            // There's probably a better way of doing this than replicating the same switch statement conditions in osxnav.rs
+            match message {
+                // Need to pass some kind of data that indicates if x/y/min/max need to be altered
+                // Just using this list of tuples for now.
+                Key::H => {
+                    reposition_grid(&delegate.image_view, [(0., 0.), (1., 0.)]);
+                },
+                Key::J => {
+                    reposition_grid(&delegate.image_view, [(0., 1.), (0., 0.)]);
+                },
+                Key::K => {
+                    reposition_grid(&delegate.image_view, [(0., 0.), (0., 1.)]);
+                },
+                Key::L => {
+                    reposition_grid(&delegate.image_view, [(1., 0.), (0., 0.)]);
+                },
+                Key::RETURN => {
+                    let grid_frame: CGRect = delegate.image_view.objc.get(|obj| unsafe {
+                        return msg_send![obj, frame];
+                    });
 
-            let grid_frame: CGRect = delegate.image_view.objc.get(|obj| unsafe {
-                return msg_send![obj, frame];
-            });
+                    let xmin = grid_frame.origin.x;
+                    let ymin = grid_frame.origin.y;
+                    let width = xmin + grid_frame.size.width;
+                    let height = ymin + grid_frame.size.height;
 
-            let old_xmin = grid_frame.origin.x;
-            let old_ymin = grid_frame.origin.y;
-            let old_xmax = old_xmin + grid_frame.size.width;
-            let old_ymax = old_ymin + grid_frame.size.height;
+                    let click_point = (xmin + width/2., ymin + height/2.);
 
-            let xmin = old_xmin + xy_min_modifiers.0 * (old_xmax - old_xmin)/2.;
-            let ymin = old_ymin + xy_min_modifiers.1 * (old_ymax - old_ymin)/2.;
-            let xmax = old_xmax - xy_max_modifiers.0 * (old_xmax - old_xmin)/2.;
-            let ymax = old_ymax - xy_max_modifiers.1 * (old_ymax - old_ymin)/2.;
-
-            let grid_length = xmax - xmin;
-            let grid_height = ymax - ymin;
-
-            delegate.image_view.objc.get(|obj| unsafe {
-                let _: ()= msg_send![obj, setFrameSize:CGSize::new(grid_length, grid_height)];
-                let _: () = msg_send![obj, setFrameOrigin:CGPoint::new(xmin, ymin)];
-            });
-
-            let config = DrawConfig {
-                source: (grid_length, grid_height),
-                target: (grid_length, grid_height),
-                resize: cacao::image::ResizeBehavior::Stretch,
-            };
-
-            let image = draw_grid(config, 0., 0., grid_length, grid_height);
-
-            delegate.image_view.set_image(&image);
+                    let result = CGEvent::new_mouse_event(
+                        CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap(),
+                        CGEventType::LeftMouseDown,
+                        // Right now, clicking happens right on the drawn grid, and gets blocked.
+                        // The clicking logic does work though.
+                        CGPoint::new(click_point.0, click_point.1), CGMouseButton::Left
+                    );
+                    result.unwrap().post(CGEventTapLocation::HID)
+                },
+                _ => { println!("{}", message) }
+            }
         }
+
     }
+}
+
+fn reposition_grid(image_view: &ImageView, xy_modifiers: [(CGFloat, CGFloat); 2]) {
+    let xy_min_modifiers = xy_modifiers[0];
+    let xy_max_modifiers = xy_modifiers[1];
+
+    let grid_frame: CGRect = image_view.objc.get(|obj| unsafe {
+        return msg_send![obj, frame];
+    });
+
+    let old_xmin = grid_frame.origin.x;
+    let old_ymin = grid_frame.origin.y;
+    let old_xmax = old_xmin + grid_frame.size.width;
+    let old_ymax = old_ymin + grid_frame.size.height;
+
+    let xmin = old_xmin + xy_min_modifiers.0 * (old_xmax - old_xmin)/2.;
+    let ymin = old_ymin + xy_min_modifiers.1 * (old_ymax - old_ymin)/2.;
+    let xmax = old_xmax - xy_max_modifiers.0 * (old_xmax - old_xmin)/2.;
+    let ymax = old_ymax - xy_max_modifiers.1 * (old_ymax - old_ymin)/2.;
+
+    let grid_length = xmax - xmin;
+    let grid_height = ymax - ymin;
+
+    image_view.objc.get(|obj| unsafe {
+        let _: ()= msg_send![obj, setFrameSize:CGSize::new(grid_length, grid_height)];
+        let _: () = msg_send![obj, setFrameOrigin:CGPoint::new(xmin, ymin)];
+    });
+
+    let config = DrawConfig {
+        source: (grid_length, grid_height),
+        target: (grid_length, grid_height),
+        resize: cacao::image::ResizeBehavior::Stretch,
+    };
+
+    let image = draw_grid(config, 0., 0., grid_length, grid_height);
+
+    image_view.set_image(&image);
 }
