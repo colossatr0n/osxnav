@@ -1,4 +1,6 @@
 use std::sync::RwLock;
+use std::thread::sleep;
+use std::time::Duration;
 use cacao::foundation::NSUInteger;
 use cacao::image::{DrawConfig, ImageView};
 use cacao::objc::{msg_send, sel, sel_impl, class};
@@ -89,9 +91,13 @@ impl Dispatcher for OsxNavApp {
                         CGEventType::LeftMouseDown,
                         CGPoint::new(click_point.0, click_point.1), CGMouseButton::Left
                     );
-                    result.unwrap().post(CGEventTapLocation::HID)
+                    result.unwrap().post(CGEventTapLocation::HID);
+                    // Sleep to allow click event to occur before exiting. Probably a better way to do this.
+                    sleep(Duration::from_millis(10));
+                    std::process::exit(0);
                 },
-                _ => { println!("{}", message) }
+                _ => { println!("{}", message)
+                }
             }
         }
 
