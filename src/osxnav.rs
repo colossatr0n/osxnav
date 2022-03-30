@@ -4,7 +4,7 @@ use cacao::lazy_static::lazy_static;
 use cacao::macos::App;
 use core_graphics::base::CGFloat;
 use core_graphics::display::CGPoint;
-use core_graphics::event::{CGEvent, CGEventType, CGMouseButton, CGKeyCode, KeyCode, CGEventTapLocation};
+use core_graphics::event::{CGEvent, CGEventType, CGMouseButton, CGKeyCode, KeyCode, CGEventTapLocation, CGEventFlags};
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use crate::OsxNavApp;
 
@@ -29,9 +29,9 @@ lazy_static! {
 }
 
 // Asynchronously calls back through to the top of the application on the main thread.
-pub fn dispatch(key: NSUInteger) {
+pub fn dispatch(key: NSUInteger, modifier_flags: CGEventFlags) {
     println!("Dispatching UI message: {:?}", key);
-    OSXNAV.run(key)
+    OSXNAV.run(key, modifier_flags)
 }
 
 pub struct OsxNav(Arc<RwLock<Vec<String>>>);
@@ -41,24 +41,10 @@ impl OsxNav {
         OsxNav(Arc::new(RwLock::new(Vec::new())))
     }
 
-    pub fn run(&self, message: NSUInteger) {
-        match message {
-            // Need to pass some kind of data that indicates if x/y/min/max need to be altered
-            // Just using this list of tuples for now.
-            Key::H => {
-                App::<OsxNavApp, NSUInteger>::dispatch_main(message);
-            },
-            Key::J => {
-                App::<OsxNavApp, NSUInteger>::dispatch_main(message);
-            },
-            Key::K => {
-                App::<OsxNavApp, NSUInteger>::dispatch_main(message);
-            },
-            Key::L => {
-                App::<OsxNavApp, NSUInteger>::dispatch_main(message);
-            },
-            Key::RETURN => {
-                App::<OsxNavApp, NSUInteger>::dispatch_main(message);
+    pub fn run(&self, keycode: NSUInteger, modifier_flags: CGEventFlags) {
+        match keycode {
+            Key::H | Key::J | Key::K | Key::L | Key::RETURN => {
+                App::<OsxNavApp, (NSUInteger, CGEventFlags)>::dispatch_main((keycode, modifier_flags));
             },
             Key::ESC => {
                 // Possibly a bad way to end the program. Works for now though.
