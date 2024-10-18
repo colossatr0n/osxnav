@@ -1,5 +1,5 @@
 # osxnav
-A keynav replacement for osx. Inspired by keynav and xeasymotion.
+A keynav replacement for osx written in Rust. Inspired by keynav and xeasymotion. Mostly just a fun project to work on.
 
 (notes) overwrite method:
 http://sasheldon.com/rust-objc/objc/declare/index.html

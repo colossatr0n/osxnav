@@ -84,9 +84,6 @@ impl Dispatcher for OsxNavApp {
                 Key::RETURN => {
                     send_click(&delegate.image_view)
                 },
-                Key::RETURN => {
-                    send_click(&delegate.image_view)
-                },
                 _ => { println!("{}", keycode) }
             }
         }
