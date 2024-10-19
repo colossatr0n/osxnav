@@ -1,6 +1,8 @@
 # osxnav
 A keynav replacement for osx written in Rust. Inspired by keynav and xeasymotion. Mostly just a fun project to work on.
 
+![osxnav-demo](https://github.com/user-attachments/assets/f82d19fc-c77c-4b14-978a-174ff175718e)
+
 
 ## Build
 Run:
