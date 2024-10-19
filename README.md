@@ -24,6 +24,11 @@ j: cut-down
 k: cut-up
 l: cut-right
 
+shift + h: translate-left
+shift + j: translate-down
+shift + k: translate-up
+shift + l: translate-right
+
 enter: click
 esc: escape
 ```

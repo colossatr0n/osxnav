@@ -146,10 +146,35 @@ fn reposition_grid(image_view: &ImageView, xy_modifiers: [(CGFloat, CGFloat); 2]
     let old_xmax = old_xmin + grid_frame.size.width;
     let old_ymax = old_ymin + grid_frame.size.height;
 
-    let xmin = old_xmin + xy_min_modifiers.0 * (old_xmax - old_xmin)/2.;
-    let ymin = old_ymin + xy_min_modifiers.1 * (old_ymax - old_ymin)/2.;
-    let xmax = old_xmax - xy_max_modifiers.0 * (old_xmax - old_xmin)/2.;
-    let ymax = old_ymax - xy_max_modifiers.1 * (old_ymax - old_ymin)/2.;
+    let mut xmin = old_xmin + xy_min_modifiers.0 * (old_xmax - old_xmin)/2.;
+    let mut ymin = old_ymin + xy_min_modifiers.1 * (old_ymax - old_ymin)/2.;
+    let mut xmax = old_xmax - xy_max_modifiers.0 * (old_xmax - old_xmin)/2.;
+    let mut ymax = old_ymax - xy_max_modifiers.1 * (old_ymax - old_ymin)/2.;
+
+    let screens: *mut Object = unsafe { msg_send![class!(NSScreen), screens] };
+    let screen: *mut Object = unsafe { msg_send![screens, objectAtIndex:0] };
+    let frame: CGRect = unsafe { msg_send![screen, frame] };
+    let screen_w = frame.size.width;
+    let screen_h = frame.size.height;
+
+    // If movement is outside of screen, move OOB side to edge of screen and retain previous grid
+    // size
+    if xmin < 0.0 {
+        xmin = 0.0;
+        xmax = old_xmax - (old_xmin);
+    }
+    if ymin < 0.0 {
+        ymin = 0.0;
+        ymax = old_ymax - old_ymin;
+    }
+    if xmax > screen_w {
+        xmax = screen_w;
+        xmin = screen_w - (old_xmax - old_xmin);
+    }
+    if ymax > screen_h {
+        ymax = screen_h ;
+        ymin = screen_h - (old_ymax - old_ymin);
+    }
 
     let grid_length = xmax - xmin;
     let grid_height = ymax - ymin;
