@@ -103,15 +103,34 @@ fn send_click(image_view: &ImageView) {
 
     let click_point = (xmin + width/2., ymin + height/2.);
 
-    let result = CGEvent::new_mouse_event(
-        CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap(),
-        CGEventType::LeftMouseDown,
-        CGPoint::new(click_point.0, click_point.1), CGMouseButton::Left
-    );
-    result.unwrap().post(CGEventTapLocation::HID);
+    // This isn't an actual "double click." Some applications need this for the
+    // click to go through such as web browsers (Chrome). Might be a better way to do this.
+    click(click_point.0, click_point.1);
+    click(click_point.0, click_point.1);
+
     // Sleep to allow click event to occur before exiting. Probably a better way to do this.
     sleep(Duration::from_millis(10));
     std::process::exit(0);
+}
+
+fn click(x: CGFloat, y: CGFloat) {
+    let mouseDown = CGEvent::new_mouse_event(
+        CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap(),
+        CGEventType::LeftMouseDown,
+        CGPoint::new(x, y),
+        CGMouseButton::Left
+    );
+
+    let mouseUp = CGEvent::new_mouse_event(
+        CGEventSource::new(CGEventSourceStateID::HIDSystemState).unwrap(),
+        CGEventType::LeftMouseUp,
+        CGPoint::new(x, y),
+        CGMouseButton::Left
+    );
+
+    mouseDown.unwrap().post(CGEventTapLocation::HID);
+    sleep(Duration::from_millis(10));
+    mouseUp.unwrap().post(CGEventTapLocation::HID);
 }
 
 fn reposition_grid(image_view: &ImageView, xy_modifiers: [(CGFloat, CGFloat); 2]) {
